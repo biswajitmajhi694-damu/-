@@ -1,0 +1,219 @@
+<!doctype html>
+
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>লোকনাথ মিষ্টান্ন ভাণ্ডার — ওয়েব অ্যাপ</title>
+  <style>
+    :root{--accent:#b02e2e;--muted:#666}
+    *{box-sizing:border-box}
+    body{font-family: "Noto Sans Bengali", Arial, sans-serif;margin:0;background:#fff}
+    header{background:linear-gradient(90deg,#ffdede,#fff);padding:14px 16px;display:flex;align-items:center;gap:12px}
+    header img{width:64px;height:64px;border-radius:8px;object-fit:cover}
+    .brand{font-size:18px;font-weight:700}
+    .subtitle{font-size:12px;color:var(--muted)}
+    main{padding:16px;display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .card{background:#fff;border:1px solid #eee;border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.03)}
+    .searchBar{display:flex;gap:8px;align-items:center}
+    input[type=text]{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
+    button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .products{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+    .product{display:flex;gap:10px;align-items:center;border-radius:8px;padding:8px;border:1px solid #f0e6e6}
+    .product img{width:64px;height:64px;border-radius:8px;object-fit:cover}
+    .pmeta{flex:1}
+    .pname{font-weight:700}
+    .price{color:var(--muted);font-size:13px}
+    .cart{position:sticky;top:16px}
+    .cart-list{max-height:420px;overflow:auto;margin-top:8px}
+    .cart-item{display:flex;justify-content:space-between;padding:8px;border-bottom:1px dashed #eee}
+    .tot{font-weight:800;margin-top:8px}
+    footer{padding:12px;text-align:center;color:#666;font-size:13px}
+    .voice{background:#fff;border:1px dashed var(--accent);padding:8px;border-radius:8px}
+    .qr-box{margin-top:10px}
+    @media(max-width:900px){main{grid-template-columns:1fr} .products{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <img id="shopCover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='100%' height='100%' fill='%23ffdede'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='22' font-family='Noto Sans Bengali' fill='%23b02e2e'>লোকনাথ মিষ্টান্ন</text></svg>" alt="লোকনাথ মিষ্টান্ন">
+    <div>
+      <div class="brand">লোকনাথ মিষ্টান্ন ভাণ্ডার</div>
+      <div class="subtitle">মিষ্টি, ভালোবাসা আর সেবা — বাংলা UI</div>
+    </div>
+  </header>  <main>
+    <section class="card">
+      <div class="searchBar">
+        <input id="search" type="text" placeholder="কিছু লিখুন বা ভয়েস সার্চ করুন — উদাহরণ: রসগোল্লা">
+        <button id="voiceBtn" title="ভয়েস সার্চ (বাংলা)">🎙️</button>
+        <button id="clearBtn">সব মুছুন</button>
+      </div><div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+    <div class="voice" id="voiceState">ভয়েস: বন্ধ</div>
+    <div style="flex:1"></div>
+    <div class="qr-box">
+      <button id="scanQrBtn">QR/Barcode স্ক্যান</button>
+    </div>
+  </div>
+
+  <div class="products" id="products"></div>
+
+  <div style="margin-top:12px;font-size:13px;color:var(--muted)">প্রোডাক্ট ছবি পরিবর্তন করতে হেডারে ক্লিক করুন।</div>
+</section>
+
+<aside class="card cart">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="font-weight:800">কার্ট</div>
+    <div id="cartCount">0 আইটেম</div>
+  </div>
+  <div class="cart-list" id="cartList"></div>
+  <div class="tot">মোট: ₹<span id="totalAmt">0</span></div>
+  <div style="margin-top:8px;display:flex;gap:8px">
+    <button id="checkout">অর্ডার রাখুন</button>
+    <button id="clearCart" style="background:#ddd;color:#000">খালি করুন</button>
+  </div>
+
+  <hr style="margin:12px 0">
+  <div style="font-weight:700">বিক্রির সারাংশ</div>
+  <div id="salesSummary" style="font-size:13px;color:var(--muted);margin-top:6px">কোনও বিক্রি নেই</div>
+</aside>
+
+  </main>  <footer>উপকরণ: মোবাইল অ্যাপ — (PWA-ready) · পরিবর্তনের জন্য পরবর্তী ধাপ: APK বানানো</footer>  <input id="fileInput" type="file" accept="image/*" style="display:none">  <script>
+    // প্রোডাক্ট লিস্ট (ইতোমধ্যে আপনি দিয়েছেন) — স্মৃতির ভিত্তিতে
+    const PRODUCTS = [
+      {id:1, name:'রসগোল্লা', price:10, img:''},
+      {id:2, name:'সন্দেশ', price:15, img:''},
+      {id:3, name:'লাড্ডু', price:8, img:''},
+      {id:4, name:'চমচম', price:12, img:''},
+      {id:5, name:'দই', price:200, img:''},
+      {id:6, name:'সন্দেশ ছাপা', price:15, img:''},
+      {id:7, name:'শিঙারা', price:5, img:''},
+      {id:8, name:'বোদে', price:12, img:''},
+      {id:9, name:'গজা', price:5, img:''},
+      {id:10, name:'গুড়ের মিষ্টি', price:15, img:''},
+      {id:11, name:'লাংচা', price:6, img:''},
+      {id:12, name:'খীরসন্দেশ', price:12, img:''},
+      {id:13, name:'পানতুয়া', price:10, img:''},
+      {id:14, name:'দুধের প্যাকেট', price:35, img:''}
+    ];
+
+    // স্থানীয় কার্ট
+    const cart = {};
+
+    // UI রেন্ডার
+    const productsEl = document.getElementById('products');
+    const cartListEl = document.getElementById('cartList');
+    const totalAmtEl = document.getElementById('totalAmt');
+    const cartCountEl = document.getElementById('cartCount');
+    const salesSummaryEl = document.getElementById('salesSummary');
+
+    function renderProducts(list){
+      productsEl.innerHTML='';
+      list.forEach(p=>{
+        const d = document.createElement('div'); d.className='product';
+        d.innerHTML = `
+          <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='100%' height='100%' fill='%23ffe9e9'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='20' font-family='Noto Sans Bengali' fill='%23b02e2e'>${encodeURIComponent(p.name)}</text></svg>" alt="${p.name}">
+          <div class="pmeta">
+            <div class="pname">${p.name}</div>
+            <div class="price">₹${p.price}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button onclick='addToCart(${p.id})'>যোগ করুন</button>
+            <button onclick='decreaseFromCart(${p.id})' style="background:#f4f4f4;color:#000">-</button>
+          </div>
+        `;
+        productsEl.appendChild(d);
+      })
+    }
+
+    function addToCart(id, qty=1){
+      const p = PRODUCTS.find(x=>x.id===id);
+      if(!p) return;
+      cart[id] = (cart[id]||0)+qty;
+      renderCart();
+    }
+    function decreaseFromCart(id){
+      if(!cart[id]) return;
+      cart[id]--;
+      if(cart[id]<=0) delete cart[id];
+      renderCart();
+    }
+    function renderCart(){
+      cartListEl.innerHTML='';
+      let total=0, items=0;
+      for(const idStr of Object.keys(cart)){
+        const id = +idStr; const qty = cart[id];
+        const p = PRODUCTS.find(x=>x.id===id);
+        const row = document.createElement('div'); row.className='cart-item';
+        row.innerHTML = `<div>${p.name} × ${qty}</div><div>₹${p.price*qty}</div>`;
+        cartListEl.appendChild(row);
+        total += p.price*qty; items += qty;
+      }
+      totalAmtEl.textContent = total;
+      cartCountEl.textContent = items+' আইটেম';
+      salesSummaryEl.textContent = items? `আজ বিক্রি হয়েছে ${items} আইটেম, মোট ₹${total}` : 'কোনও বিক্রি নেই';
+    }
+
+    document.getElementById('clearCart').addEventListener('click', ()=>{ if(confirm('কার্ট খালি করবেন?')){ for(const k in cart) delete cart[k]; renderCart(); }});
+    document.getElementById('clearBtn').addEventListener('click', ()=>{document.getElementById('search').value=''; filterProducts();});
+
+    document.getElementById('checkout').addEventListener('click', ()=>{
+      if(Object.keys(cart).length===0){ alert('কার্ট খালি আছে।'); return; }
+      const payload = { items: Object.keys(cart).map(id=>({ id:+id, qty:cart[id] })), total: +totalAmtEl.textContent, time: new Date().toISOString() };
+      // পূববর্তী ভার্সনে এখানে সার্ভারে POST করা হবে। এখন লোকালি কনসোল
+      console.log('অর্ডার:', payload);
+      alert('অর্ডার রেকর্ড করা হয়েছে (লোকালি)। কনসোল চেক করুন।');
+      // বিক্রয় রিসেট
+      for(const k in cart) delete cart[k]; renderCart();
+    });
+
+    // সার্চ + ভয়েস
+    const searchInput = document.getElementById('search');
+    searchInput.addEventListener('input', filterProducts);
+    function filterProducts(){
+      const q = searchInput.value.trim().toLowerCase();
+      if(!q) renderProducts(PRODUCTS);
+      else renderProducts(PRODUCTS.filter(p=>p.name.toLowerCase().includes(q)));
+    }
+
+    // Web Speech API (ভয়েস ইনপুট)
+    const voiceBtn = document.getElementById('voiceBtn');
+    const voiceState = document.getElementById('voiceState');
+    let recognition;
+    if('webkitSpeechRecognition' in window || 'SpeechRecognition' in window){
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      recognition.lang = 'bn-IN';
+      recognition.interimResults = false;
+      recognition.onstart = ()=> voiceState.textContent='ভয়েস: চালু (বোলুন)';
+      recognition.onresult = (e)=>{
+        const txt = e.results[0][0].transcript;
+        searchInput.value = txt; filterProducts();
+      }
+      recognition.onend = ()=> voiceState.textContent='ভয়েস: বন্ধ';
+      voiceBtn.addEventListener('click', ()=>{
+        try{ recognition.start(); }catch(e){ console.warn(e); }
+      });
+    } else {
+      voiceBtn.disabled=true; voiceState.textContent='ভয়েস: ব্রাউজার সমর্থন করে না';
+    }
+
+    // QR/Barcode স্ক্যান — সরল পদ্ধতি (ডিভাইস ক্যামেরা নেওয়া)
+    document.getElementById('scanQrBtn').addEventListener('click', async ()=>{
+      alert('QR স্ক্যান: এই ডেমোতে ক্যামেরা পাওয়া না গেলে সাজেশন হিসেবে ফাইল আপলোড ব্যবহার করুন।');
+      // ভবিষ্যতে: এখানে লাইব্রেরি (jsQR / ZXing) যোগ করে স্বয়ংক্রিয় স্ক্যান করা যাবে।
+    });
+
+    // হেডার ইমেজ ক্লিক করলে ছবি আপলোড করতে দিবে
+    document.getElementById('shopCover').addEventListener('click', ()=> document.getElementById('fileInput').click());
+    document.getElementById('fileInput').addEventListener('change', (e)=>{
+      const f = e.target.files[0]; if(!f) return;
+      const url = URL.createObjectURL(f); document.getElementById('shopCover').src = url;
+    });
+
+    // ইনিশিয়াল রেণ্ডার
+    renderProducts(PRODUCTS);
+    renderCart();
+  </script></body>
+</html>
+  </script></body>
+</html>
